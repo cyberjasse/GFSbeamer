@@ -2,8 +2,8 @@
 \usetheme[navigation]{UMONS}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
-\newcommand{\slideheight}{7.3cm}
-\newcommand{\slidewidth}{12.3cm}
+\newcommand{\slideheight}{7cm}
+\newcommand{\slidewidth}{12cm}
 
 \title[Google File System]{The Google File System}
 \author[B.Jason]{Jason \textsc{Bury}}
@@ -42,13 +42,22 @@
 
 \section{Introduction}
 \subsection{Introduction}
+% Hello everybody, I will introduce you the Google's paper about their new File System.
+% Thanks to the observations of application behaviors,
+% They could design a new file system more specialized for their client needs.
+\begin{frame}
+ \frametitle{}
+\end{frame}
+
 \newcommand{\incicon}[1]{\includegraphics[height=0.7cm]{figures/#1}}
-% -The need of data processing is rapidly growing
-% -There are thousands of inexpensive storage machine used by thousands of clients.
-%  There is always one componenent failure and some will not recover.
-% -The files are huge, typically multi-GB
-% -The common files mutation here is data appending at the end of the file.
-%  Writes withing a file are very rare.
+% Here are some problems they had to manage:
+%  -The need of data processing is rapidly growing
+%  -There are thousands of inexpensive storage machines used by thousands of clients.
+%   At any time, there is a componenent failure and it can to not recover.
+% And problems due to the recurrent needs of their client:
+%  -The files are huge, typically multi-GB
+%  -The common files mutation here is data appending at the end of the file.
+%   Writes withing a file are very rare.
 \begin{frame} % TODO image de fond un big data floute grise
  \frametitle{The problems}
  \begin{itemize}
@@ -59,13 +68,16 @@
  \end{itemize}
 \end{frame}
 
-% -Many componenent that often fails
-% -Few millions of files larger than 100MB and often Multi-GB. There can be also some small files.
-% -Two kinds of reads: large streaming and small random reads
-% -Writes are practically always large appends à the end of a file
-% -Concurrent append to a file (Hundreds of producer and one consummer)
-% -A high bandwith is far more appreciable than a low latency
-\begin{frame}
+% ----
+%
+% Here are also some assumptions we need to take account to design the new file system.
+%  -As we saw in the previous slide, There are many componenents that often fails
+%  -Few millions of files larger than 100MB and often Multi-GB. There can be also some small files.
+%  -Two kinds of reads: large streaming and small random reads
+%  -Writes are practically always large appends à the end of a file
+%  -Concurrent append to a file (Hundreds of producer and one consummer)
+%  -A high bandwith is far more appreciable than a low latency
+\begin{frame} % TODO ptet inutile
  \frametitle{Assumptions}
  \begin{itemize}
   \item Many component that often fails
@@ -78,7 +90,7 @@
  \end{itemize}
 \end{frame}
 
-% # ptet inutile
+% # ----   ptet inutile
 {
 \usebackgroundtemplate{\vbox to \paperheight{\vfil\hbox to \paperwidth{\hfil\includegraphics[height=7cm]{figures/CTR_Shield_3.jpg}\hfil}\vfil}}
 \begin{frame}
@@ -92,6 +104,28 @@
 \end{frame}
 }
 
+\begin{frame}
+ \frametitle{}
+\end{frame}
+
+% The main problem to solve is the fault tolerance on component failures.
+% Here are the main ideas about their solution:
+% Data replication will ensure that corrupted or unavailable files will stay accessible. TODO correct ?
+% To continue to treat the big flow of client request, servers must be operational as fast as possible.
+% A log system ensure that no mutation in file is missed even if a fail occur during a mutation
+% Then, data integrity is assured for the client (but not for a server) thanks to checksum and version number.
+% We will see how they integrated these in the system but also how they deal with the big amout of client request and especially append request.
+\begin{frame}
+ \frametitle{Fault tolerance}
+ \begin{itemize}
+  \item \alert{Data replication}
+  \item \alert{Fast recovery} (fast reboot)
+  \item \alert{Log system}
+  \item \alert{Data integrity} (checksum + version number)
+ \end{itemize}
+\end{frame}
+% + 1m
+
 \section{Architecture}
 \subsection{Architecture}
 % # IMAGE avec master, des branches vers des cercles qui representent des clusters
@@ -99,7 +133,7 @@
 %
 % The file system is distributed across multiple servers.
 % All the files data are stored in chunkservers
-% and a master server process all client's first request and maintain chunkservers to respect all guarantees.
+% A master server process all client's first request( and maintain chunkservers to respect all guarantees.)
 \begin{frame}
  \frametitle{One Master, thousands chunkservers}
  \centering
@@ -117,7 +151,8 @@
 % and this case is unlikely from 3 replicas.
 \begin{frame}
  \frametitle{A file}
- 
+ \centering
+ \includegraphics[height=\slideheight]{figures/filegfsschema.png}
 \end{frame}
 
 \newcommand{\masterpicheight}{5cm}
@@ -148,6 +183,20 @@
  \includegraphics[height=\masterpicheight]{figures/namespaceTreeMapschema.png}
 \end{frame}
 
+% All metadata changes are logged in a file so that the master can recover after a fail.
+% If the change is du to a client request, the log is written before responding to the client.
+% The master recovers the file system by replaying the operations log.
+% Regular checkpoints allow fast recovery by assuring that operations logged before the checkpoints are performed.
+% The log is stored in remote servers.
+\begin{frame}
+ \frametitle{The operations Log}
+ \begin{center}
+ \includegraphics[height=6cm]{figures/logschema.png}
+ \alert{+checkpoints}
+ \end{center}
+\end{frame}
+% + 20s
+
 \section{Interactions}
 \subsection{Interactions}
 % For a read,
@@ -155,8 +204,8 @@
 % TODO Chunkserver state ?
 % Then it responds with the chunk ID and the location of all replicas.
 % No more interactions is needed between the client and the master.
-% The client send its request to one of the chunkservers containing the desired replica.
-% If the replica is not available, the client send the request again to another chunkserver containing the replica.
+% The client sends its request to one of the chunkservers containing the desired replica.
+% If the replica is not available, the client sends the request again to another chunkserver containing the replica.
 % And finally we have the data transfer.
 \begin{frame}
  \frametitle{A read}
@@ -167,21 +216,21 @@
 % The write has to be made at all chunk replicas.
 % First of all, the master grants one of the chunkservers containing a replica of the chunk to mutate.
 % This chunkserver become the primary.
-% So, step1, the client ask to the master which chunkserver is the primary and the location of chunk replicas.
-% Step 2, the master respons and the client caches the primary identity
+% So, step1, the client asks to the master which chunkserver is the primary and the location of chunk replicas.
+% Step 2, the master responds and the client caches the primary identity
 % so that, for future mutations to the chunk,
 % no more interactions between the client and the master is needed until the primary become unreachable.
 % Step 3, the data is transfered to the chunkservers.
 % The maner that the data is transfered depends on the network topology and bandwith.
 % Step 4, its time to write the data in the persistent memory:
 % The client sends a write request to the primary.
-% The primary can receive write request for the same chunk concurrently from different clients.
-% It assign a serial number to all these request to define the order of mutation to do.
+% The primary can receive multiple write request for the same chunk concurrently from different clients.
+% It assigns a serial number to all these request to define the order of mutation to do.
 % Step 5, the primary sends the write request to secondary chunkservers providing the sequence of serial numbers.
 % Then, step 6, all secondaries indicate to the primary that the operation is complete or failed.
 % Finally, the primary indicates to the client if the write is a success or it failed in a secondary replica.
-% If it failed, it loops starting at the thirs step were the client sends data to the secondary chunkserver that failed the operation.
-% And if the fail still occur in some iterations of the loop, the client restart at step 1.
+% If it failed, it loops starting at the third step were the client sends data to the secondary chunkserver that failed the operation.
+% And if the fail still occur after some iterations of the loop, the client restart at step 1.
 \begin{frame}
  \frametitle{A write}
  \centering
@@ -191,10 +240,17 @@
 % The random write in the same region can't be concurrent
 % But if the write is an append, then the client doesn't have to inform the region where to write.
 % The Google File System choose the offset where to write the append and this allow it to perform the write concurrently.
+% without synchronisation by locks.
 % The writing is performed as a multiple-producer/single-consumer queue.
+% If the data in the chunk + the append will exceed the maximum chunk size,
+% The primary pads the chunk to the maximum size, tell to secondaries to do the same,
+% and asks to the client to do the append on the next chunk.
+%
+% # ici 5m40 à 6m sans les inutiles.
 \begin{frame}
  \frametitle{An append}
- 
+ \centering
+ \includegraphics[width=\slidewidth]{figures/appendsschema.png}
 \end{frame}
 
 \begin{frame}
@@ -204,13 +260,60 @@
 
 \section{Master's operations}
 \subsection{Master operations}
+% The master place the replicas of a chunk in chunksever from different racks.
+% So, even if a power supply or a switch fails, the client still have access to its data.
+% Also, since chunkservers in a rack are connected to the same switch,
+% The bandwith is higher if we use the aggregate bandwith of three racks instead of three chunkservers bottlenecked by their common switch.
 \begin{frame}
  \frametitle{Replica placement}
  
 \end{frame}
 
+%
 \begin{frame}
  \frametitle{Re-replica and rebalancing}
+ There are three reasons that a replica is created:
+ \begin{enumerate}
+  \item The chunk is just created.
+  \item The number of replicas is below an user-specified goal.
+  \item The master moves it for better load balancing.
+ \end{enumerate}
+\end{frame}
+% Ici, 6m30 environ sans les inutiles
+
+% When the client requests to remove a file,
+% The master just renames it to a hidden name.
+% The scan of the file system remove these renamed files 3 days after the client request.
+% This remove does not concern data in the chunk server but only in the metadatas.
+\begin{frame}
+ \frametitle{Garbage collection}
+ \framesubtitle{Removing file}
+\end{frame}
+
+% Chunkserver send regular heartbeat message to the master containing a subset of chunk IDs that the chunkserver store.
+% The master responds with the list of unknown chunk IDs, tipycally the IDs of removed chunks,
+% To allow the chunkserver to delete chunks in their persistent memory.
+\begin{frame}
+ \frametitle{Garbage collection}
+ \framesubtitle{Recover memory}
+\end{frame}
+
+% During the scan, the master also clean up chunks that are in the mapping of chunk IDs and their location
+% that are not in the file-to-chunk mappings.
+\begin{frame}
+ \frametitle{Garbage collection}
+ \framesubtitle{Orphan chunks}
+\end{frame}
+% garbage collection: + 46s
+
+% A chunk replica may become stale if a chunkserver misses a mutation request.
+% That's why each chunks contains a version number to distinguish up-to-date replicas.
+% Then, the master can detect stale replicas during the garbage collection and it deletes them.
+% Moreover, if a chunkserver restart, it sends immediatly to the master which chunks it stores and with their version number.
+% TODO ajouter checksum
+\begin{frame}
+ \frametitle{Garbage collection}
+ \frametitle{Stale replica detection}
  
 \end{frame}
 
@@ -218,22 +321,41 @@
 \subsection{Measurements}
 \newcommand{\ratemesoption}{7cm}
 \newcommand{\ratemehspace}{\hspace{15mm}}
+% They measured the aggregate read rate of 16 clients on 16 chunkservers.
+% In the graphic here, the first curve is the theorical maximum agregate rate estimated following the network limit.
+% The second curve is, of course, the measured rate.
+% We can see that the rate is increasing but more and more slowly to reach an asymptote: the theorical maximum that is 125MB/s
+% The increase is more and more slowly because the more readers the more probability of concurrent reading
 \begin{frame}
  \frametitle{Read rate}
  \ratemehspace
  \includegraphics[height=\ratemesoption]{figures/GFSreads.png}
 \end{frame}
 
+% The curve shape is the same for aggregate random write rate.
+% except that the theorical maximum stagnates to 67MB/s here and the rate is increasing even slower.
+% Because the data have to be transfered to 3 chunkservers for each writes,
+% we have a lower maximum rate.
+% Also, the asymptote here is about the half of the maximum theorical rate.
+% It is due to their network stack.
+% It doesn't interact very well with their pipelining scheme.
+% But because random write are very rare, we should not be worry about.
 \begin{frame}
  \frametitle{Write rate}
  \ratemehspace
  \includegraphics[height=\ratemesoption]{figures/GFSwrites.png}
 \end{frame}
 
+% Finally, the aggregate append write rate.
+% All clients appends data to the same file.
+% Then, the network limit falls to 12MB/s because the bandwith is limited to that of the chunkserver.
+% Because of the same reason, the aggregate rate is not clearly increasing or decreasing.
+% The variation is due to network congestion.
 \begin{frame}
  \frametitle{Append rate}
  \ratemehspace
  \includegraphics[height=\ratemesoption]{figures/GFSappends.png}
 \end{frame}
+% ici 8m15
 
 \end{document}
