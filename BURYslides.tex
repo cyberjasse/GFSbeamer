@@ -15,28 +15,6 @@
   \raisebox{-1ex}{\includegraphics[height=6ex]{figures/UMONS_FS}}
 }
 
-% Le plan
-% .Introduction
-%   - Le problème
-%   - Les observations, suppositions
-%   - Les objectifs atteints
-% .Architecture
-%   - 1 maitres et des chunkservers
-%   - Decoupage en chunk
-%   - Ce que contient le maitre
-% .Les garanties
-% .Les interactions
-%   - Lecture
-%   - Les differentes etapes pour ecrire
-%   - Append
-%   - Snapshot
-% .Master
-%   - Namespace management (pas important)
-%   - Replica placement
-%   - Re-replication et rebalancing
-% .Garbage collection
-% .Mesures
-
 \begin{document}
 \maketitle
 
@@ -68,46 +46,6 @@
  \end{itemize}
 \end{frame}
 
-% ----
-%
-% Here are also some assumptions we need to take account to design the new file system.
-%  -As we saw in the previous slide, There are many componenents that often fails
-%  -Few millions of files larger than 100MB and often Multi-GB. There can be also some small files.
-%  -Two kinds of reads: large streaming and small random reads
-%  -Writes are practically always large appends à the end of a file
-%  -Concurrent append to a file (Hundreds of producer and one consummer)
-%  -A high bandwith is far more appreciable than a low latency
-\begin{frame} % TODO ptet inutile
- \frametitle{Assumptions}
- \begin{itemize}
-  \item Many component that often fails
-  \item Few millions of 100MB to Multi-GB files
-  \item Large streaming reads
-  \item Small random reads
-  \item Large appends
-  \item Rare random writes
-  \item A high bandwith instead of low latency
- \end{itemize}
-\end{frame}
-
-% # ----   ptet inutile
-{
-\usebackgroundtemplate{\vbox to \paperheight{\vfil\hbox to \paperwidth{\hfil\includegraphics[height=7cm]{figures/CTR_Shield_3.jpg}\hfil}\vfil}}
-\begin{frame}
- \frametitle{Guarantees}
- \begin{center}
- \begin{itemize}
-  \item File namespace changements or creations are atomic. % By a lock
-  \item All client will see the same. % Concurrent writing are made in the same order for each file and a number version for each chunk to detect stale chunk
- \end{itemize}
- \end{center}
-\end{frame}
-}
-
-\begin{frame}
- \frametitle{}
-\end{frame}
-
 % The main problem to solve is the fault tolerance on component failures.
 % Here are the main ideas about their solution:
 % Data replication will ensure that corrupted or unavailable files will stay accessible. TODO correct ?
@@ -124,13 +62,9 @@
   \item \alert{Data integrity} (checksum + version number)
  \end{itemize}
 \end{frame}
-% + 1m
 
 \section{Architecture}
 \subsection{Architecture}
-% # IMAGE avec master, des branches vers des cercles qui representent des clusters
-% # Et dans ces clusters, mettre en etoiles des chunkservers avec ptet des pinguin linux
-%
 % The file system is distributed across multiple servers.
 % All the files data are stored in chunkservers
 % A master server process all client's first request( and maintain chunkservers to respect all guarantees.)
@@ -140,8 +74,6 @@
  \includegraphics[height=\slideheight]{figures/masterschema.png}
 \end{frame}
 
-% # IMAGE voir derriere feuille. un fichier decoupe en chunks et 1 de ces chunks avec 3 fleches allant vers des chunkservers differentes
-%
 % Files are splitted into one ore several sixty-four Megabytes chunks.
 % All chunks are replicated at least 3 times.
 % The numbers of replica is chosen by the client.
@@ -156,8 +88,6 @@
 \end{frame}
 
 \newcommand{\masterpicheight}{5cm}
-% # 1 IMAGE (ou 2) pour montrer l'arbre et le dictionnaire qu'il y a a coté.
-%
 % The master contains all metadatas about the file system.
 % These metadatas are stored in three data structures.
 % First, all file names are mapped to the list of unique IDs of their chunks. 
@@ -167,6 +97,7 @@
  \centering
  \includegraphics[height=\masterpicheight]{figures/namespaceMapschema.png}
 \end{frame}
+
 % Then, another mapping maps chunk IDs to the location of their replicas
 \begin{frame}
  \frametitle{Master}
@@ -174,6 +105,7 @@
  \centering
  \includegraphics[height=\masterpicheight]{figures/namespaceMapMapschema.png}
 \end{frame}
+
 % And, To allow us to explore files like in i-node system,
 % A tree organize the files and their name correspond to the namespace in the tree.TODO correct ?
 \begin{frame}
@@ -195,7 +127,6 @@
  \alert{+checkpoints}
  \end{center}
 \end{frame}
-% + 20s
 
 \section{Interactions}
 \subsection{Interactions}
@@ -245,17 +176,10 @@
 % If the data in the chunk + the append will exceed the maximum chunk size,
 % The primary pads the chunk to the maximum size, tell to secondaries to do the same,
 % and asks to the client to do the append on the next chunk.
-%
-% # ici 5m40 à 6m sans les inutiles.
 \begin{frame}
  \frametitle{An append}
  \centering
  \includegraphics[width=\slidewidth]{figures/appendsschema.png}
-\end{frame}
-
-\begin{frame}
- \frametitle{A snapshot}
- 
 \end{frame}
 
 \section{Master's operations}
@@ -279,7 +203,6 @@
   \item The master moves it for better load balancing.
  \end{enumerate}
 \end{frame}
-% Ici, 6m30 environ sans les inutiles
 
 % When the client requests to remove a file,
 % The master just renames it to a hidden name.
@@ -304,7 +227,6 @@
  \frametitle{Garbage collection}
  \framesubtitle{Orphan chunks}
 \end{frame}
-% garbage collection: + 46s
 
 % A chunk replica may become stale if a chunkserver misses a mutation request.
 % That's why each chunks contains a version number to distinguish up-to-date replicas.
@@ -356,6 +278,5 @@
  \ratemehspace
  \includegraphics[height=\ratemesoption]{figures/GFSappends.png}
 \end{frame}
-% ici 8m15
 
 \end{document}
