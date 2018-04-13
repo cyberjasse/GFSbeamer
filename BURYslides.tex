@@ -125,14 +125,14 @@
 \begin{frame}
  \frametitle{The operations Log}
  \begin{center}
- \includegraphics[height=6cm]{figures/logschema.png}
- \alert{+ checkpoints}\\
+ \includegraphics[height=5cm]{figures/logschema.png}
+ \\\alert{+ checkpoints}\\
  $\Rightarrow$ fast recovery
  \end{center}
 \end{frame}
 
 \section{Interactions}
-\subsection{Interactions}
+\subsection{read}
 % Now, we will see the interactions between clients, chunkservers and the master to read or write a file.
 % For a read,
 % The client asks to the master,
@@ -166,17 +166,23 @@
 % Finally, the primary indicates to the client if the write is a success or it failed in a secondary replica.
 % If it failed, it loops starting at the third step were the client sends data to the secondary chunkservers that failed the operation.
 % And if the fail still occur after some iterations of the loop, the client restarts at step 1.
-\begin{frame}
- \frametitle{Interactions for a write}
- \centering
- \includegraphics[height=\slideheight]{figures/GFSflow.png}
-\end{frame}
+\newcommand{\writeslide}[2]{\begin{frame}\frametitle{Interactions for a write}\alert{Step #1}: #2\vspace{0.3cm}\\\centering\includegraphics[height=6cm]{figures/GFSflowImgs/GFSflow#1.png}\end{frame}}
+\subsection{write}
+\writeslide{0}{The master grants a replica.}
+\writeslide{1}{The client asks which is the primary.}
+\writeslide{2}{The master responds.}
+\writeslide{3}{The client sends data to chunkservers.}
+\writeslide{4}{The client sends a write request to the primary.}
+\writeslide{5}{The primary sends a write request to secondaries.}
+\writeslide{6}{The secondaries indicates failure or success to the primary.}
+\writeslide{7}{The primary indicates failure or success to the client.}
 
 % The random write in the same region can't be concurrent
 % But if the write is an append, then the client doesn't have to inform the region where to write.
 % The Google File System choose the offset where to write the append and this allow it to perform the write concurrently.
 % without synchronisation by locks.
 % The writing is performed as a multiple-producer/single-consumer queue.
+\subsection{append}
 \begin{frame}
  \frametitle{The append operation}
  Concurrent appends in \alert{one} operation\\\vspace{0.5cm}
@@ -357,7 +363,7 @@
  \frametitle{Conclusion}
  \begin{itemize}
   \item[] \inccheck Fault-tolerant
-  \item[] \inccheck For huge files
+  \item[] \inccheck Support huge files
   \item[] \inccheck Efficient for large streaming reads
   \item[] \inccheck Efficient for concurrent appends
  \end{itemize}
