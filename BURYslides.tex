@@ -2,7 +2,7 @@
 \usetheme[navigation]{UMONS}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
-\newcommand{\slideheight}{7cm}
+\newcommand{\slideheight}{6.7cm}
 \newcommand{\slidewidth}{12cm}
 \newcommand{\incicon}[1]{\includegraphics[height=0.7cm]{figures/#1}}
 
@@ -142,11 +142,11 @@
 % No more interactions is needed between the client and the master.
 % The client sends its request to one of the chunkservers containing the desired replica and data is transfered.
 % If the replica is not available at this moment, the client sends the request again to another chunkserver containing the replica.
-\begin{frame}
- \frametitle{Interactions for a read}
- \centering
- \includegraphics[width=\slidewidth]{figures/GFSarchitecture.png}
-\end{frame}
+\newcommand{\readslide}[2]{\begin{frame}\frametitle{Interactions for a read}\alert{Step #1}: #2\vspace{1cm}\\\centering\includegraphics[width=\slidewidth]{figures/GFSreadImgs/GFSarchitecture#1.png}\end{frame}}
+\readslide{1}{The client asks to the master replica locations.}
+\readslide{2}{The master gives location of all replicas.}
+\readslide{3}{The client sends the read request to a chunkserver.}
+\readslide{4}{The data stream starts.}
 
 % If we want to write, The write has to be made at all chunk replicas.
 % First of all, the master grants one of the chunkservers containing a replica of the chunk to mutate.
@@ -171,7 +171,7 @@
 \writeslide{0}{The master grants a replica.}
 \writeslide{1}{The client asks which is the primary.}
 \writeslide{2}{The master responds.}
-\writeslide{3}{The client sends data to chunkservers.}
+\writeslide{3}{The data is transfered to chunkservers.}
 \writeslide{4}{The client sends a write request to the primary.}
 \writeslide{5}{The primary sends a write request to secondaries.}
 \writeslide{6}{The secondaries indicates failure or success to the primary.}
