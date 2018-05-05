@@ -21,7 +21,7 @@
 
 \section{Introduction}
 \subsection{Introduction}
-% Hello everybody, I will introduce you the Google's paper about their new File System.
+% Hello everybody, I will introduce the Google's paper about their new File System.
 % A Google file system is generally used by thousands of users that want to share a huge amount of data
 % A Google's team observed common problems and application behaviors to design a new file system more adapted to their client's application.
 \begin{frame}
@@ -33,11 +33,12 @@
 
 % Here are some problems they had to manage:
 %  -The need of data processing is rapidly growing
-%  -There are thousands of inexpensive storage machines used by thousands of clients.
+%  -There are thousands of inexpensive storage machines
 %   So many that At any time, there is a componenent failure and it can to not recover.
 %  -The files are huge, typically multi-GB
 %  -The common files mutation here is data appending at the end of the file.
 %   Writes within a file are very rare.
+%  -Reads are générally large streaming instead of small random
 \begin{frame}
  \frametitle{The problems}
  \begin{itemize}
@@ -53,8 +54,8 @@
 % Data replication will ensure that client still have access to their data even if a file is corrupted or unavailable.
 % To continue to treat the big flow of client request, servers must be operational as fast as possible.
 % A log system ensure that no data will be lost even if a fail occur during a mutation
-% Then, data integrity is assured for the client (but not for a server) thanks to checksum and version number.
-% We will see how they integrated these in the system but also how they deal with the big amout of client request and especially append request.
+% Then, data integrity is assured for the client thanks to checksum and version number.
+% We will see how they integrated these in the system but also how they deal with the big amout of client request.
 \begin{frame}
  \frametitle{Fault tolerance}
  \begin{itemize}
@@ -78,11 +79,9 @@
 
 % Files are splitted into one or several sixty-four Megabytes chunks.
 % All chunks are replicated at least 3 times.
-% The numbers of replica is chosen by the client.
 % Then all replicas are stored in different chunkserver.
 % So, the client lose access to its data only if all these chunkserver fails at the same time.
 % and this case is unlikely from 3 replicas.
-% Thanks to this, the system can also support files larger than the storage capacity of a server.
 \begin{frame}
  \frametitle{A file}
  \centering
@@ -91,7 +90,7 @@
 
 \newcommand{\masterpicheight}{5cm}
 % The master contains all metadatas about the file system.
-% These metadatas allow the user to find desired files ande are stored in three data structures.
+% These metadatas allow the user to find desired data and are stored in three data structures.
 % Firstly, all file names are mapped to the list of unique IDs of their chunks. 
 \begin{frame}
  \frametitle{What is in the master ?}
@@ -120,8 +119,7 @@
 % All metadata changes are logged in a file so that the master can recover after a fail.
 % If the change is due to a client request, the log is written before responding to the client.
 % The master recovers the file system by replaying the operations log.
-% Regular checkpoints allow fast recovery by assuring that operations logged before the checkpoints are performed.
-% The log is stored in remote servers.
+% Regular checkpoints allow fast recovery( by assuring that operations logged before the checkpoints are performed.)
 \begin{frame}
  \frametitle{The operations Log}
  \begin{center}
@@ -137,9 +135,7 @@
 % For a read,
 % The client asks to the master,
 % the location of a replica of a chunk providing the file name and the chunk index computed from chunk size and the offset.
-% After assuring that all replicas are available,
 % the master responds with the chunk ID and the location of all replicas.
-% No more interactions is needed between the client and the master.
 % The client sends its request to one of the chunkservers containing the desired replica and data is transfered.
 % If the replica is not available at this moment, the client sends the request again to another chunkserver containing the replica.
 \newcommand{\readslide}[2]{\begin{frame}\frametitle{Interactions for a read}\alert{Step #1}: #2\vspace{1cm}\\\centering\includegraphics[width=\slidewidth]{figures/GFSreadImgs/GFSarchitecture#1.png}\end{frame}}
@@ -152,9 +148,7 @@
 % First of all, the master grants one of the chunkservers containing a replica of the chunk to mutate.
 % This chunkserver is called the primary.
 % So, step1, the client asks to the master which chunkserver is the primary and the location of chunk replicas.
-% Step 2, the master responds and the client caches the primary identity
-% so that, for future mutations to the chunk,
-% no more interactions between the client and the master is needed until the primary becomes unreachable.
+% Step 2, the master responds
 % Step 3, the data is transfered to the chunkservers.
 % The maner that the data is transfered depends on the network topology and bandwith.
 % Step 4, its time to write the data in the persistent memory:
@@ -164,7 +158,7 @@
 % Step 5, the primary sends the write request to secondary chunkservers providing the sequence of serial numbers.
 % Then, step 6, all secondaries indicate to the primary that the operation is complete or failed.
 % Finally, the primary indicates to the client if the write is a success or it failed in a secondary replica.
-% If it failed, it loops starting at the third step were the client sends data to the secondary chunkservers that failed the operation.
+% If it failed, it loops starting at the third step were the client sends data to the chunkservers.
 % And if the fail still occur after some iterations of the loop, the client restarts at step 1.
 \newcommand{\writeslide}[2]{\begin{frame}\frametitle{Interactions for a write}\alert{Step #1}: #2\vspace{0.3cm}\\\centering\includegraphics[height=6cm]{figures/GFSflowImgs/GFSflow#1.png}\end{frame}}
 \subsection{write}
@@ -229,7 +223,7 @@
 
 % The master can also decides to create or displace a replica.
 % The reasons are: chunk creation by the client,
-% Or a replica is anavailable and so we have to create the missing replica
+% Or a replica is anavailable and so the master has to create the missing replica
 % Or just to balance bandwith use among servers
 \begin{frame}
  \frametitle{Re-replica and rebalancing}
@@ -254,10 +248,10 @@
  \end{itemize}
 \end{frame}
 
-% When the client requests to remove a file,
-% The master just renames it to a hidden name.
+% When the client request to remove a file,
+% The master just renames it to a hidden name containing the deletion date.
 % The scan of the file system remove these renamed files 3 days after the client request.
-% This remove does not concern data in the chunk server but only in the metadatas.
+% This remove does not concern data in the chunkserver but only in the metadata.
 \begin{frame}
  \frametitle{Garbage collection}
  \framesubtitle{Removing file}
@@ -265,7 +259,7 @@
  \includegraphics[width=\slidewidth]{figures/removeschema.png}
 \end{frame}
 
-% Chunkserver send regular heartbeat message to the master containing a subset of chunk IDs that the chunkserver store.
+% Chunkserver sends regular heartbeat message to the master containing a subset of chunk IDs that the chunkserver store.
 % The master responds with the list of unknown chunk IDs, tipycally the IDs of removed chunks,
 % To allow the chunkserver to delete chunks in their persistent memory.
 \begin{frame}
@@ -318,7 +312,7 @@
 \subsection{Measurements}
 \newcommand{\ratemesoption}{7cm}
 \newcommand{\ratemehspace}{\hspace{15mm}}
-% As a conclusion, I will show you some result of their test before deployment.
+% I will show you some result of their test before deployment.
 % They measured the aggregate read rate of 16 clients on 16 chunkservers.
 % In the graphic here, the first curve is the theorical maximum agregate rate estimated following the network limit.
 % The second curve is, of course, the measured rate.
@@ -337,7 +331,6 @@
 % Also, the asymptote here is about the half of the maximum theorical rate.
 % It is due to their network stack.
 % It doesn't interact very well with their pipelining scheme.
-% But because random write are very rare, we should not be worry about.
 \begin{frame}
  \frametitle{Write rate}
  \ratemehspace
